@@ -511,6 +511,7 @@ public class HttpRequestUtils {
 	}
 
 	// 读取请求头
+	@SuppressWarnings("unused")
 	private String getReqeustHeader(HttpURLConnection conn) {
 		// https://github.com/square/okhttp/blob/master/okhttp-urlconnection/src/main/java/okhttp3/internal/huc/HttpURLConnectionImpl.java#L236
 		Map<String, List<String>> requestHeaderMap = conn.getRequestProperties();
@@ -528,6 +529,7 @@ public class HttpRequestUtils {
 	}
 
 	// 读取响应头
+	@SuppressWarnings("unused")
 	private static String getResponseHeader(HttpURLConnection conn) {
 		Map<String, List<String>> responseHeaderMap = conn.getHeaderFields();
 		int size = responseHeaderMap.size();
