@@ -468,11 +468,6 @@ public class HttpRequestUtils {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private static void logD(String msg) {
-		Log.d(HttpRequestUtils.class.getName(), "请求:[" + msg + "]时发生异常");
-	}
-
 	private static void logE(String msg) {
 		Log.e(HttpRequestUtils.class.getName(), "请求:[" + msg + "]时发生异常");
 	}
