@@ -529,7 +529,6 @@ public class HttpRequestUtils {
 	}
 
 	// 读取响应头
-	@SuppressWarnings("unused")
 	private static String getResponseHeader(HttpURLConnection conn) {
 		Map<String, List<String>> responseHeaderMap = conn.getHeaderFields();
 		int size = responseHeaderMap.size();
