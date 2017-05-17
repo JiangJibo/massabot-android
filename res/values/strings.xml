@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">大梵推拿</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="connect_text">连  接</string>
+    <string name="disconnect_text">断  开</string>
+    <string name="start_text">开  始</string>
+    <string name="finish_text">结  束</string>
+    <string name="pause_text">暂  停</string>
+    <string name="voice_adjustment_text">语音调节</string>
+    <string name="resume_text">继  续</string>
+    
+    <string name="demo_mode_text">演  示</string>
+    <string name="reappear_mode_text">复  现</string>
+    <string name="back_text"><u>&lt; 返   回</u></string>
+    <string name="demo_text"><u>示   教  &gt;</u></string>
+    <string name="finger_tem_text">指 温:</string>
+    
+    <string name="text_begin">请开始说话…</string>
+    
+
+</resources>
