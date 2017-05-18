@@ -6,6 +6,8 @@ package com.bob.massabot.wifi;
 
 import java.util.List;
 
+import com.bob.massabot.util.GlobalApplicationUtils;
+
 import android.content.Context;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
@@ -24,57 +26,56 @@ import android.net.wifi.WifiManager.WifiLock;
 public class WifiConnectUtils {
 
 	// 定义WifiManager对象
-	private WifiManager mWifiManager;
+	private static WifiManager mWifiManager;
 	// 定义WifiInfo对象
-	private WifiInfo mWifiInfo;
+	private static WifiInfo mWifiInfo;
 	// 扫描出的网络连接列表
-	private List<ScanResult> mWifiList;
+	private static List<ScanResult> mWifiList;
 	// 网络连接列表
-	private List<WifiConfiguration> mWifiConfiguration;
+	private static List<WifiConfiguration> mWifiConfiguration;
 	// 定义一个WifiLock
-	WifiLock mWifiLock;
+	private static WifiLock mWifiLock;
 
-	// 构造器
-	public WifiConnectUtils(Context context) {
+	static {
 		// 取得WifiManager对象
-		mWifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+		mWifiManager = (WifiManager) GlobalApplicationUtils.getAppContext().getSystemService(Context.WIFI_SERVICE);
 		// 取得WifiInfo对象
 		mWifiInfo = mWifiManager.getConnectionInfo();
 	}
 
 	// 打开WIFI
-	public void openWifi() {
+	public static void openWifi() {
 		if (!mWifiManager.isWifiEnabled()) {
 			mWifiManager.setWifiEnabled(true);
 		}
 	}
 
 	// 关闭WIFI
-	public void closeWifi() {
+	public static void closeWifi() {
 		if (mWifiManager.isWifiEnabled()) {
 			mWifiManager.setWifiEnabled(false);
 		}
 	}
 
 	// 检查当前WIFI状态
-	public int checkState() {
+	public static int checkState() {
 		return mWifiManager.getWifiState();
 	}
 
 	// 锁定WifiLock
-	public void acquireWifiLock() {
+	public static void acquireWifiLock() {
 		mWifiLock.acquire();
 	}
 
 	// 解锁WifiLock
-	public void releaseWifiLock() {
+	public static void releaseWifiLock() {
 		// 判断时候锁定
 		if (mWifiLock.isHeld()) {
 			mWifiLock.acquire();
 		}
 	}
 
-	public void startScan() {
+	public static void startScan() {
 		mWifiManager.startScan();
 		// 得到扫描结果
 		mWifiList = mWifiManager.getScanResults();
@@ -83,17 +84,17 @@ public class WifiConnectUtils {
 	}
 
 	// 创建一个WifiLock
-	public void creatWifiLock() {
+	public static void creatWifiLock() {
 		mWifiLock = mWifiManager.createWifiLock("Test");
 	}
 
 	// 得到配置好的网络
-	public List<WifiConfiguration> getConfiguration() {
+	public static List<WifiConfiguration> getConfiguration() {
 		return mWifiConfiguration;
 	}
 
 	// 指定配置好的网络进行连接
-	public void connectConfiguration(int index) {
+	public static void connectConfiguration(int index) {
 		// 索引大于配置好的网络索引返回
 		if (index > mWifiConfiguration.size()) {
 			return;
@@ -103,12 +104,12 @@ public class WifiConnectUtils {
 	}
 
 	// 得到网络列表
-	public List<ScanResult> getWifiList() {
+	public static List<ScanResult> getWifiList() {
 		return mWifiList;
 	}
 
 	// 查看扫描结果
-	public StringBuilder lookUpScan() {
+	public static StringBuilder lookUpScan() {
 		StringBuilder stringBuilder = new StringBuilder();
 		for (int i = 0; i < mWifiList.size(); i++) {
 			stringBuilder.append("Index_" + Integer.valueOf(i + 1).toString() + ":");
@@ -121,17 +122,17 @@ public class WifiConnectUtils {
 	}
 
 	// 得到MAC地址
-	public String getMacAddress() {
+	public static String getMacAddress() {
 		return (mWifiInfo == null) ? "NULL" : mWifiInfo.getMacAddress();
 	}
 
 	// 得到接入点的BSSID
-	public String getBSSID() {
+	public static String getBSSID() {
 		return (mWifiInfo == null) ? "NULL" : mWifiInfo.getBSSID();
 	}
 
 	// 得到接入点的SSID
-	public String getSSID() {
+	public static String getSSID() {
 		if (mWifiInfo == null) {
 			return "NULL";
 		}
@@ -143,17 +144,17 @@ public class WifiConnectUtils {
 	}
 
 	// 得到IP地址
-	public int getIPAddress() {
+	public static int getIPAddress() {
 		return (mWifiInfo == null) ? 0 : mWifiInfo.getIpAddress();
 	}
 
 	// 得到连接的ID
-	public int getNetworkId() {
+	public static int getNetworkId() {
 		return (mWifiInfo == null) ? 0 : mWifiInfo.getNetworkId();
 	}
 
 	// 得到WifiInfo的所有信息包
-	public String getWifiInfo() {
+	public static String getWifiInfo() {
 		return (mWifiInfo == null) ? "NULL" : mWifiInfo.toString();
 	}
 
@@ -163,25 +164,25 @@ public class WifiConnectUtils {
 	 * @param wcg
 	 * @return 是否连接成功指定wifi
 	 */
-	public boolean addNetwork(WifiConfiguration wcg) {
+	public static boolean addNetwork(WifiConfiguration wcg) {
 		int wcgID = mWifiManager.addNetwork(wcg);
 		return mWifiManager.enableNetwork(wcgID, true);
 	}
 
 	// 断开当前连接
-	public void disConnectWifi() {
+	public static void disConnectWifi() {
 		disconnectWifi(getNetworkId());
 	}
 
 	// 断开指定ID的网络
-	public void disconnectWifi(int netId) {
+	public static void disconnectWifi(int netId) {
 		mWifiManager.disableNetwork(netId);
 		mWifiManager.disconnect();
 	}
 
 	// 然后是一个实际应用方法，只验证过没有密码的情况：
 
-	public WifiConfiguration CreateWifiInfo(String SSID, String Password, int Type) {
+	public static WifiConfiguration CreateWifiInfo(String SSID, String Password, int Type) {
 		WifiConfiguration config = new WifiConfiguration();
 		config.allowedAuthAlgorithms.clear();
 		config.allowedGroupCiphers.clear();
@@ -192,7 +193,7 @@ public class WifiConnectUtils {
 
 		// android 6.0以下
 		if (android.os.Build.VERSION.SDK_INT < 23) {
-			WifiConfiguration tempConfig = this.IsExsits(SSID);
+			WifiConfiguration tempConfig = IsExsits(SSID);
 			if (tempConfig != null) {
 				mWifiManager.removeNetwork(tempConfig.networkId);
 			}
@@ -230,7 +231,7 @@ public class WifiConnectUtils {
 		return config;
 	}
 
-	private WifiConfiguration IsExsits(String SSID) {
+	private static WifiConfiguration IsExsits(String SSID) {
 		List<WifiConfiguration> existingConfigs = mWifiManager.getConfiguredNetworks();
 		for (WifiConfiguration existingConfig : existingConfigs) {
 			if (existingConfig.SSID.equals("\"" + SSID + "\"")) {

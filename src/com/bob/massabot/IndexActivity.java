@@ -53,7 +53,6 @@ import android.widget.Toast;
 public class IndexActivity extends BaseActivity implements OnClickListener {
 
 	private WifiReceiver wifiReceiver;
-	private WifiConnectUtils wifiUtils;
 
 	private static final Integer QR_SCAN_CODE = 2; // 二维码扫描时的请求code
 
@@ -78,8 +77,6 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_index);
-
-		wifiUtils = new WifiConnectUtils(this);
 
 		findViewById(R.id.qr_img).setOnClickListener(this);
 		progressDialog = DialogUtils.createProgressDialog(this, null, null);
@@ -159,7 +156,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 				return;
 			}
 			showProgressDialog();
-			String ssid = wifiUtils.getSSID();
+			String ssid = WifiConnectUtils.getSSID();
 			if (WIFI_SSID.equals(ssid)) {
 				connectDevices(host_adress, serialPort);
 			} else {
@@ -225,7 +222,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		permissions = new HashMap<String, String>();
 		permissions.put(Manifest.permission.READ_PHONE_STATE, "电话");
 		permissions.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, "存储");
-		int wifiState = wifiUtils.checkState();
+		int wifiState = WifiConnectUtils.checkState();
 		if (wifiState == WifiManager.WIFI_STATE_DISABLED || wifiState == WifiManager.WIFI_STATE_DISABLING) {
 			permissions.put(Manifest.permission.CHANGE_WIFI_STATE, "WiFi");
 		}
@@ -350,15 +347,15 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		new Thread() {
 
 			public void run() {
-				int state = wifiUtils.checkState();
+				int state = WifiConnectUtils.checkState();
 				if (state == WifiManager.WIFI_STATE_ENABLED || state == WifiManager.WIFI_STATE_ENABLING) {
-					if (ssid.equals(wifiUtils.getSSID())) {
+					if (ssid.equals(WifiConnectUtils.getSSID())) {
 						return;
 					}
-					wifiUtils.disConnectWifi();
+					WifiConnectUtils.disConnectWifi();
 				}
-				wifiUtils.openWifi();
-				wifiUtils.addNetwork(wifiUtils.CreateWifiInfo(ssid, pwd, ssl));
+				WifiConnectUtils.openWifi();
+				WifiConnectUtils.addNetwork(WifiConnectUtils.CreateWifiInfo(ssid, pwd, ssl));
 			}
 
 		}.start();
