@@ -33,6 +33,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -86,7 +87,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 
 		handler = new Handler() {
 
-			boolean wifiConnected = false; // wifi状态,是否切换到指定的wifi
+			boolean wifiConnected; // wifi状态,是否切换到指定的wifi
 			boolean wifiChecked = false; // 在ProgressDialog内延迟一秒连接设备
 
 			public void handleMessage(Message msg) {
@@ -118,6 +119,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 						toast("连接推拿设备超时,请重新连接");
 					}
 					if (wifiConnected && wifiChecked) { // 在wifi切换成功后,可能网络初始化未完成,需要等待一点时间后再连接电机
+						wifiConnected = false; // 只发送一次连接请求
 						connectDevices(host_adress, serialPort);
 					}
 					wifiChecked = wifiConnected; // 在wifi切换成功的下一秒连接电机
@@ -130,6 +132,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		};
 
 		registerWiFiReceiver();
+		WifiConnectUtils.init();
 		initPermissions();
 	}
 
@@ -156,6 +159,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 				return;
 			}
 			showProgressDialog();
+			WifiConnectUtils.init();
 			String ssid = WifiConnectUtils.getSSID();
 			if (WIFI_SSID.equals(ssid)) {
 				connectDevices(host_adress, serialPort);
@@ -278,19 +282,27 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 	 * 
 	 * @param ssid
 	 */
-	private void connectDevices(String host_adress, String serialPort) {
+	private void connectDevices(String host_adress, final String serialPort) {
 		requestPrefix = HttpRequestUtils.createRequestUrl(host_adress, WEB_ROOT, INDEX_CON_URL);
-		try {
-			String result = HttpRequestUtils.doPostWithThread(requestPrefix + CONNECT_URL + "/" + serialPort, null, 1000);
-			if (SUCCESS_FLAG.equals(result)) {
-				startActivityForResult(createNewActivity(MainActivity.class), 1);
-			} else {
-				processConnectResult(result);
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPost(requestPrefix + CONNECT_URL + "/" + serialPort, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("连接:" + requestPrefix + CONNECT_URL + "/" + serialPort + " 失败");
-		}
-		progressDialog.dismiss();
+
+			@Override
+			protected void onPostExecute(String result) {
+				progressDialog.dismiss();
+				if (SUCCESS_FLAG.equals(result)) {
+					startActivityForResult(createNewActivity(MainActivity.class), 1);
+				} else {
+					processConnectResult(result);
+				}
+			}
+
+		}.execute();
+
 	}
 
 	/**
@@ -325,7 +337,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 				msg.obj = second;
 				handler.sendMessage(msg);
 				second--;
-				if (second == -1) {
+				if (!progressDialog.isShowing()) {
 					timer.cancel();
 				}
 			}
@@ -347,6 +359,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		new Thread() {
 
 			public void run() {
+				WifiConnectUtils.retrieveWifiInfo();
 				int state = WifiConnectUtils.checkState();
 				if (state == WifiManager.WIFI_STATE_ENABLED || state == WifiManager.WIFI_STATE_ENABLING) {
 					if (ssid.equals(WifiConnectUtils.getSSID())) {

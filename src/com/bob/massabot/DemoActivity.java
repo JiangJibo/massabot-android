@@ -22,6 +22,7 @@ import com.google.gson.reflect.TypeToken;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -150,11 +151,20 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 			@Override
 			public boolean onLongClick(View v) {
-				try {
-					HttpRequestUtils.doPutWithThread(requestPrefix + RESETTING_DEVICE, null, 1000);
-				} catch (Exception e) {
-					toast("复位电机时出现异常,请重新尝试");
-				}
+				new AsyncTask<Void, Void, String>() {
+
+					@Override
+					protected String doInBackground(Void... params) {
+						return HttpRequestUtils.doPut(requestPrefix + RESETTING_DEVICE, null, 1000);
+					}
+
+					protected void onPostExecute(String result) {
+						if (result == null) {
+							toast(reapperBtn.getText().toString() + "操作失败");
+						}
+					}
+
+				}.execute();
 				return true;
 			}
 		});
@@ -164,75 +174,97 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * 在演示模式下开始
 	 */
 	private void startDemoMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				timer.start();
-				lockWidgetAfterStarted();
-			} else {
-				toast(result);
+
+		new AsyncTask<Void, Void, String>() {
+
+			@Override
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("开启案列:[" + curDemoCaseName + "]演示模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					timer.start();
+					lockWidgetAfterStarted();
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 暂停演示模式运行
 	 */
 	private void pauseDemoMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPutWithThread(requestPrefix + DEMO_FILE_WRITE_URL + PAUSE_URL, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				timer.stop();
-				this.rangeTime = SystemClock.elapsedRealtime() - timer.getBase();
-				pauseBtn.setText(resumeText);
-			} else {
-				toast(result);
+
+		new AsyncTask<Void, Void, String>() {
+
+			@Override
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPut(requestPrefix + DEMO_FILE_WRITE_URL + PAUSE_URL, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("结束案列:[" + curDemoCaseName + "]演示模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					timer.stop();
+					rangeTime = SystemClock.elapsedRealtime() - timer.getBase();
+					pauseBtn.setText(resumeText);
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 恢复演示模式运行
 	 */
 	private void resumeDemoMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				timer.setBase(SystemClock.elapsedRealtime() - rangeTime);
-				timer.start();
-				pauseBtn.setText(pauseText);
-			} else {
-				toast(result);
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("结束案列:[" + curDemoCaseName + "]演示模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					timer.setBase(SystemClock.elapsedRealtime() - rangeTime);
+					timer.start();
+					pauseBtn.setText(pauseText);
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 在演示模式下结束
 	 */
 	private void finishDemoMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPostWithThread(precondition, requestPrefix + DEMO_FILE_WRITE_URL, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				processDemoNameAfterFinished();
-			} else {
-				toast(result);
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPost(precondition, requestPrefix + DEMO_FILE_WRITE_URL, null, 3000);
 			}
-			timer.stop();
-			lockWidgetAfterFinished();
-		} catch (Exception e) {
-			toast("结束案列:[" + curDemoCaseName + "]演示模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					processDemoNameAfterFinished();
+				} else {
+					toast(result);
+				}
+				timer.stop();
+				lockWidgetAfterFinished();
+			}
+
+		}.execute();
 	}
 
 	/**
@@ -241,75 +273,91 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * @return
 	 */
 	private void startRepMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPostWithThread(precondition, requestPrefix + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				this.progressing = true;
-				lockWidgetAfterStarted();
-				getProgress();
-			} else {
-				toast(result);
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPost(precondition, requestPrefix + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("开始案列:[" + curDemoCaseName + "]复现模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					progressing = true;
+					lockWidgetAfterStarted();
+					getProgress();
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 暂停复现模式
 	 */
 	private void pauseRepMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				this.progressing = false;
-				pauseBtn.setText(resumeText);
-			} else {
-				toast(result);
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("暂停案列:[" + curDemoCaseName + "]复现模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					progressing = false;
+					pauseBtn.setText(resumeText);
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 恢复复现模式的运行
 	 */
 	private void resumeRepMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				this.progressing = true;
-				pauseBtn.setText(pauseText);
-				getProgress();
-			} else {
-				toast(result);
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
 			}
-		} catch (Exception e) {
-			toast("恢复案列:[" + curDemoCaseName + "]复现模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					progressing = true;
+					pauseBtn.setText(pauseText);
+					getProgress();
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
 	 * 中途结束示教复现模式
 	 */
 	private void abortRepMode() {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doDeleteWithThread(precondition, requestPrefix + DEMO_FILE_READ_URL, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				this.progressing = false;
-				roundProgressBar.setProgress(0);
-				lockWidgetAfterFinished();
-			} else {
-				toast(result);
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doDelete(precondition, requestPrefix + DEMO_FILE_READ_URL, 3000);
 			}
-		} catch (Exception e) {
-			toast("结束案列:[" + curDemoCaseName + "]复现模式时出现异常,请重新尝试");
-		}
+
+			protected void onPostExecute(String result) {
+				if (SUCCESS_FLAG.equals(result)) {
+					progressing = false;
+					roundProgressBar.setProgress(0);
+					lockWidgetAfterFinished();
+				} else {
+					toast(result);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
@@ -378,22 +426,25 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * 初始化示教文件下拉框
 	 */
 	private void initDemoDropdown() {
-		ArrayList<String> data = null;
-		String result = null;
-		try {
-			result = HttpRequestUtils.doGetWithThread(requestPrefix, 3000);
-			if (result != null) {
-				data = new Gson().fromJson(result, new TypeToken<ArrayList<String>>() {
-				}.getType());
-				setModBtnClickable(true);
-				this.curDemoCaseName = data.get(0);
-				demoDropdown.setItemsData(data, 0);
-			} else {
-				demoDropdown.setItemsData(new ArrayList<String>(), null);
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doGet(requestPrefix, 3000);
 			}
-		} catch (Exception e) {
-			toast(result);
-		}
+
+			protected void onPostExecute(String result) {
+				if (result != null) {
+					ArrayList<String> data = new Gson().fromJson(result, new TypeToken<ArrayList<String>>() {
+					}.getType());
+					setModBtnClickable(true);
+					curDemoCaseName = data.get(0);
+					demoDropdown.setItemsData(data, 0);
+				} else {
+					demoDropdown.setItemsData(new ArrayList<String>(), null);
+				}
+			}
+
+		}.execute();
 	}
 
 	/**
@@ -401,20 +452,22 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * 
 	 * @param demoName
 	 */
-	public boolean createNewDemoCase(String demoName) {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doPostWithThread(requestPrefix + "?demoName=" + demoName, null, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				return true;
-			}
-		} catch (Exception e) {
-			toast("创建示教案列超时,请稍后再试");
-			return false;
-		}
-		toast(result);
-		return false;
+	public boolean createNewDemoCase(final String demoName) {
 
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPost(requestPrefix + "?demoName=" + demoName, null, 3000);
+			}
+
+			protected void onPostExecute(String result) {
+				if (!SUCCESS_FLAG.equals(result)) {
+					toast(result);
+				}
+			}
+
+		}.execute();
+		return true;
 	}
 
 	/**
@@ -423,19 +476,21 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * @param demoName
 	 * @return
 	 */
-	public boolean deleteDemoCase(String demoName) {
-		String result = null;
-		try {
-			result = HttpRequestUtils.doDeleteWithThread(requestPrefix + "?demoName=" + demoName, 3000);
-			if (SUCCESS_FLAG.equals(result)) {
-				return true;
+	public boolean deleteDemoCase(final String demoName) {
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doDelete(requestPrefix + "?demoName=" + demoName, 3000);
 			}
-		} catch (Exception e) {
-			toast("删除示教案列超时,请稍后再试");
-			return false;
-		}
-		toast(result);
-		return false;
+
+			protected void onPostExecute(String result) {
+				if (!SUCCESS_FLAG.equals(result)) {
+					toast(result);
+				}
+			}
+
+		}.execute();
+		return true;
 	}
 
 	/* (non-Javadoc)

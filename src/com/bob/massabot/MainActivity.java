@@ -31,6 +31,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -46,6 +47,8 @@ import android.widget.Toast;
 public class MainActivity extends BaseActivity implements OnClickListener {
 
 	private volatile int progress = 0;// 当前进度
+
+	private int indoorTemp; // 室内温度,手指难以调低到室温以下
 
 	private Button startBtn, pauseBtn, voiceAdjustBtn, shoulderBtn, waistBtn, backBtn;
 
@@ -102,6 +105,8 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
 		retriveDataFromPreIntent();
 
+		initFingerTemp();
+
 		voicer = new VoiceToTextProcessor(this, requestPrefix);
 		voicer.uploadUserWords();
 
@@ -136,32 +141,37 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 	 * @param operation
 	 *            true:提高;false:降低
 	 */
-	private void processFingerTemp(boolean operation) {
-		int temp = Integer.parseInt(tempText.getText().toString().substring(0, 2));
-		temp = operation ? temp + 1 : temp - 1;
-		try {
-			String result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + temp, null, 1000);
-			if (!SUCCESS_FLAG.equals(result)) {
-				toast(result);
-				return;
+	private void processFingerTemp(final boolean operation) {
+		int temp0 = Integer.parseInt(tempText.getText().toString().substring(0, 2));
+		final int temp1 = operation ? temp0 + 1 : temp0 - 1;
+		new AsyncTask<Integer, Void, String>() {
+
+			protected String doInBackground(Integer... params) {
+				return HttpRequestUtils.doPut(precondition, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
 			}
-		} catch (Exception e) {
-			toast("设置手指温度超时,请重新设置");
-			return;
-		}
-		if (operation) {
-			setTextViewClickable(tempReduce, true);
-			tempText.setText(temp + "℃");
-			if (temp == FINGER_TEMP_MAX) {
-				setTextViewClickable(tempAdd, false);
+
+			@Override
+			protected void onPostExecute(String result) {
+				if (!SUCCESS_FLAG.equals(result)) {
+					toast(result);
+					return;
+				}
+				if (operation) {
+					setTextViewClickable(tempReduce, true);
+					tempText.setText(temp1 + "℃");
+					if (temp1 == FINGER_TEMP_MAX) {
+						setTextViewClickable(tempAdd, false);
+					}
+				} else {
+					setTextViewClickable(tempAdd, true);
+					tempText.setText(temp1 + "℃");
+					if (temp1 == FINGER_TEMP_MIN) {
+						setTextViewClickable(tempReduce, false);
+					}
+				}
 			}
-		} else {
-			setTextViewClickable(tempAdd, true);
-			tempText.setText(temp + "℃");
-			if (temp == FINGER_TEMP_MIN) {
-				setTextViewClickable(tempReduce, false);
-			}
-		}
+		}.execute(temp1);
+
 	}
 
 	/* (non-Javadoc)
@@ -190,12 +200,19 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 		}
 		long secTime = System.currentTimeMillis();
 		if (secTime - exitTime <= 3000) {
-			try {
-				HttpRequestUtils.doDeleteWithThread(precondition, requestPrefix + CONNECT_URL, 5000);
-			} catch (Exception e) {
-				toast("断开连接失败,请重新尝试");
-			}
-			ActivityCollector.removeAllActivity();
+			new AsyncTask<Void, Void, Void>() {
+
+				protected Void doInBackground(Void... params) {
+					HttpRequestUtils.doDelete(precondition, requestPrefix + CONNECT_URL, 5000);
+					return null;
+				}
+
+				@Override
+				protected void onPostExecute(Void result) {
+					ActivityCollector.removeAllActivity();
+				}
+
+			}.execute();
 		} else {
 			String text = startBtn.getText().toString();
 			if (finishText.equals(text)) {
@@ -474,8 +491,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 	 * @see android.view.View.OnClickListener#onClick(android.view.View)
 	 */
 	@Override
-	public void onClick(View v) {
-		String result = null;
+	public void onClick(final View v) {
 		TextView tv = (TextView) v;
 		String text = tv.getText().toString();
 		switch (v.getId()) {
@@ -486,30 +502,49 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 						toast("开始前请先选定按摩服务类型及力度!");
 						return;
 					}
-					result = HttpRequestUtils.doPostWithThread(precondition, requestPrefix + MASSAGE_URL + "/" + massageType.code, null, 3000);
-					if (SUCCESS_FLAG.equals(result)) {
-						((Button) v).setText(finishText);
-						progressing = true;
-						setButtonClickable(pauseBtn, true);
-						pauseBtn.setText(pauseText);
-						setMassageServiceButtonClickable(false);
-						getProgress();
-					} else {
-						toast(result);
-					}
+					new AsyncTask<Void, Void, String>() {
+
+						protected String doInBackground(Void... params) {
+							return HttpRequestUtils.doPost(precondition, requestPrefix + MASSAGE_URL + "/" + massageType.code, null, 3000);
+						}
+
+						protected void onPostExecute(String result) {
+							if (SUCCESS_FLAG.equals(result)) {
+								((Button) v).setText(finishText);
+								progressing = true;
+								setButtonClickable(pauseBtn, true);
+								pauseBtn.setText(pauseText);
+								setMassageServiceButtonClickable(false);
+								getProgress();
+							} else {
+								toast(result);
+							}
+						}
+
+					}.execute();
 				} else if (finishText.equals(text)) {
-					result = HttpRequestUtils.doDeleteWithThread(precondition, requestPrefix + MASSAGE_URL, 3000);
-					if (SUCCESS_FLAG.equals(result)) {
-						progressing = false;
-						((Button) v).setText(startText);
-						setButtonClickable(pauseBtn, false);
-						roundProgressBar.setProgress(0);
-						resetMassageButton();
-						setMassageServiceButtonClickable(true);
-						pauseBtn.setText(pauseText);
-					} else {
-						toast(result);
-					}
+
+					new AsyncTask<Void, Void, String>() {
+
+						protected String doInBackground(Void... params) {
+							return HttpRequestUtils.doDelete(precondition, requestPrefix + MASSAGE_URL, 3000);
+						}
+
+						protected void onPostExecute(String result) {
+							if (SUCCESS_FLAG.equals(result)) {
+								progressing = false;
+								((Button) v).setText(startText);
+								setButtonClickable(pauseBtn, false);
+								roundProgressBar.setProgress(0);
+								resetMassageButton();
+								setMassageServiceButtonClickable(true);
+								pauseBtn.setText(pauseText);
+							} else {
+								toast(result);
+							}
+						}
+
+					}.execute();
 				}
 			} catch (Exception e) {
 				toast(text + "操作失败,请重试");
@@ -520,22 +555,39 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 			try {
 				if (pauseText.equals(text)) {
 					progressing = false;
-					result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + MASSAGE_URL + PAUSE_URL, null, 3000);
-					toast(result);
-					if (SUCCESS_FLAG.equals(result)) {
-						((Button) v).setText(resumeText);
-					} else {
-						toast(result);
-					}
+					new AsyncTask<Void, Void, String>() {
+
+						protected String doInBackground(Void... params) {
+							return HttpRequestUtils.doPut(precondition, requestPrefix + MASSAGE_URL + PAUSE_URL, null, 3000);
+						}
+
+						protected void onPostExecute(String result) {
+							if (SUCCESS_FLAG.equals(result)) {
+								((Button) v).setText(resumeText);
+							} else {
+								toast(result);
+							}
+						}
+
+					}.execute();
 				} else if (resumeText.equals(text)) {
 					progressing = true;
-					result = HttpRequestUtils.doPutWithThread(precondition, requestPrefix + MASSAGE_URL + RESUME_URL, null, 3000);
-					if (SUCCESS_FLAG.equals(result)) {
-						((Button) v).setText(pauseText);
-						getProgress();
-					} else {
-						toast(result);
-					}
+					new AsyncTask<Void, Void, String>() {
+
+						protected String doInBackground(Void... params) {
+							return HttpRequestUtils.doPut(precondition, requestPrefix + MASSAGE_URL + RESUME_URL, null, 3000);
+						}
+
+						protected void onPostExecute(String result) {
+							if (SUCCESS_FLAG.equals(result)) {
+								((Button) v).setText(pauseText);
+								getProgress();
+							} else {
+								toast(result);
+							}
+						}
+
+					}.execute();
 				}
 			} catch (Exception e) {
 				toast(text + "操作失败,请重试");
@@ -628,6 +680,31 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 			}
 			break;
 		}
+	}
+
+	/**
+	 * 初始化手指温度
+	 */
+	private void initFingerTemp() {
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doGet(precondition, requestPrefix + FINGER_TEMP_SETTING_URL, 1000);
+			}
+
+			protected void onPostExecute(String result) {
+				try {
+					int temp = Integer.parseInt(result);
+					tempText.setText(result);
+					indoorTemp = temp;
+					setTextViewClickable(tempReduce, false);
+				} catch (NumberFormatException e) {
+					toast("初始化手指温度失败");
+				}
+			}
+
+		}.execute();
 	}
 
 }

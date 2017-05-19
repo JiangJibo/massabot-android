@@ -23,6 +23,14 @@ import android.net.wifi.WifiManager.WifiLock;
  * @author JiangJibo
  *
  */
+/**
+ * 自动连接WiFi的工具类
+ * 
+ * @since 2017年5月2日 上午9:16:58
+ * @version $Id$
+ * @author JiangJibo
+ *
+ */
 public class WifiConnectUtils {
 
 	// 定义WifiManager对象
@@ -36,10 +44,20 @@ public class WifiConnectUtils {
 	// 定义一个WifiLock
 	private static WifiLock mWifiLock;
 
-	static {
+	/**
+	 * 初始化方法
+	 */
+	public static void init() {
 		// 取得WifiManager对象
 		mWifiManager = (WifiManager) GlobalApplicationUtils.getAppContext().getSystemService(Context.WIFI_SERVICE);
 		// 取得WifiInfo对象
+		mWifiInfo = mWifiManager.getConnectionInfo();
+	}
+
+	/**
+	 * 再次获取当前WifiInfo
+	 */
+	public static void retrieveWifiInfo() {
 		mWifiInfo = mWifiManager.getConnectionInfo();
 	}
 
@@ -131,16 +149,8 @@ public class WifiConnectUtils {
 		return (mWifiInfo == null) ? "NULL" : mWifiInfo.getBSSID();
 	}
 
-	// 得到接入点的SSID
 	public static String getSSID() {
-		if (mWifiInfo == null) {
-			return "NULL";
-		}
-		String ssid = mWifiInfo.getSSID();
-		if (ssid.startsWith("\"")) {
-			ssid = ssid.substring(1, ssid.length() - 1);
-		}
-		return ssid;
+		return (mWifiInfo == null) ? "NULL" : mWifiInfo.getSSID();
 	}
 
 	// 得到IP地址

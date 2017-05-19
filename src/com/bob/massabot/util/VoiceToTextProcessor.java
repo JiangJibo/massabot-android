@@ -37,6 +37,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Environment;
 import android.widget.Toast;
 
@@ -267,18 +268,24 @@ public class VoiceToTextProcessor {
 	private RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
 
 		public void onResult(RecognizerResult results, boolean isLast) {
-			String result = printResult(results);
-			try {
-				if (!onceSended) {
-					result = HttpRequestUtils.doPutWithThread(requestPrefix + USER_VOICE_WORDS_URL + "?voiceWords=" + result, null, 2000);
-				}
-				onceSended = true;
-			} catch (Exception e) {
-				showTip("使用语音指令调节超时,请重新尝试");
+			if (!onceSended) {
+				new AsyncTask<String, Void, String>() {
+
+					protected String doInBackground(String... params) {
+						return HttpRequestUtils.doPut(requestPrefix + USER_VOICE_WORDS_URL + "?voiceWords=" + params[0], null, 2000);
+					}
+
+					@Override
+					protected void onPostExecute(String result) {
+						onceSended = true;
+						if (!MassabotConstant.SUCCESS_FLAG.equals(result)) {
+							showTip(result);
+						}
+					}
+
+				}.execute(printResult(results));
 			}
-			if (!MassabotConstant.SUCCESS_FLAG.equals(result)) {
-				showTip(result);
-			}
+
 		}
 
 		/**
