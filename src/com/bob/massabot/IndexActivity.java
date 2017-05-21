@@ -132,7 +132,6 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		};
 
 		registerWiFiReceiver();
-		WifiConnectUtils.init();
 		initPermissions();
 	}
 
@@ -159,8 +158,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 				return;
 			}
 			showProgressDialog();
-			WifiConnectUtils.init();
-			String ssid = WifiConnectUtils.getSSID();
+			String ssid = new WifiConnectUtils(this).getSSID();
 			if (WIFI_SSID.equals(ssid)) {
 				connectDevices(host_adress, serialPort);
 			} else {
@@ -226,7 +224,7 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		permissions = new HashMap<String, String>();
 		permissions.put(Manifest.permission.READ_PHONE_STATE, "电话");
 		permissions.put(Manifest.permission.WRITE_EXTERNAL_STORAGE, "存储");
-		int wifiState = WifiConnectUtils.checkState();
+		int wifiState = new WifiConnectUtils(this).checkState();
 		if (wifiState == WifiManager.WIFI_STATE_DISABLED || wifiState == WifiManager.WIFI_STATE_DISABLING) {
 			permissions.put(Manifest.permission.CHANGE_WIFI_STATE, "WiFi");
 		}
@@ -359,16 +357,16 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		new Thread() {
 
 			public void run() {
-				WifiConnectUtils.retrieveWifiInfo();
-				int state = WifiConnectUtils.checkState();
+				WifiConnectUtils wifiUtils = new WifiConnectUtils(IndexActivity.this);
+				int state = wifiUtils.checkState();
 				if (state == WifiManager.WIFI_STATE_ENABLED || state == WifiManager.WIFI_STATE_ENABLING) {
-					if (ssid.equals(WifiConnectUtils.getSSID())) {
+					if (ssid.equals(wifiUtils.getSSID())) {
 						return;
 					}
-					WifiConnectUtils.disConnectWifi();
+					wifiUtils.disConnectWifi();
 				}
-				WifiConnectUtils.openWifi();
-				WifiConnectUtils.addNetwork(WifiConnectUtils.CreateWifiInfo(ssid, pwd, ssl));
+				wifiUtils.openWifi();
+				wifiUtils.addNetwork(wifiUtils.CreateWifiInfo(ssid, pwd, ssl));
 			}
 
 		}.start();
