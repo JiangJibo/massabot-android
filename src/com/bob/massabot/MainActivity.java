@@ -1,25 +1,25 @@
 package com.bob.massabot;
 
-import static com.bob.massabot.constant.HttpRequestURLConfig.CONNECT_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.FINGER_TEMP_SETTING_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.MAIN_CON_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.MASSAGE_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.PAUSE_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.PROGRESS_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.RESUME_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.WEB_ROOT;
 import static com.bob.massabot.constant.MassabotConstant.FINGER_TEMP_MAX;
 import static com.bob.massabot.constant.MassabotConstant.FINGER_TEMP_MIN;
 import static com.bob.massabot.constant.MassabotConstant.SUCCESS_FLAG;
 import static com.bob.massabot.constant.MassabotConstant.WIFI_SSID;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.CONNECT_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.FINGER_TEMP_SETTING_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.MAIN_CON_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.MASSAGE_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.PAUSE_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.PROGRESS_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.RESUME_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.WEB_ROOT;
 
 import com.bob.massabot.constant.MassageServiceType;
 import com.bob.massabot.constant.StateNodes;
 import com.bob.massabot.model.BaseActivity;
 import com.bob.massabot.model.MassageServiceState;
 import com.bob.massabot.util.ActivityCollector;
-import com.bob.massabot.util.HttpRequestUtils;
 import com.bob.massabot.util.VoiceToTextProcessor;
+import com.bob.massabot.util.http.HttpRequestUtils;
 import com.bob.massabot.widget.RoundProgressBar;
 import com.google.gson.Gson;
 
@@ -147,7 +147,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Integer, Void, String>() {
 
 			protected String doInBackground(Integer... params) {
-				return HttpRequestUtils.doPut(precondition, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
 			}
 
 			@Override
@@ -194,8 +194,8 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 	 * @see android.app.Activity#onBackPressed()
 	 */
 	public void onBackPressed() {
-		if (!precondition.checkBeforeRequest()) {
-			toast(precondition.getNotpassNotice());
+		if (!requestFilter.doFilter()) {
+			toast(requestFilter.doAfterRejection());
 			return;
 		}
 		long secTime = System.currentTimeMillis();
@@ -203,7 +203,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 			new AsyncTask<Void, Void, Void>() {
 
 				protected Void doInBackground(Void... params) {
-					HttpRequestUtils.doDelete(precondition, requestPrefix + CONNECT_URL, 5000);
+					HttpRequestUtils.doDelete(requestFilter, requestPrefix + CONNECT_URL, 5000);
 					return null;
 				}
 
@@ -505,7 +505,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 					new AsyncTask<Void, Void, String>() {
 
 						protected String doInBackground(Void... params) {
-							return HttpRequestUtils.doPost(precondition, requestPrefix + MASSAGE_URL + "/" + massageType.code, null, 3000);
+							return HttpRequestUtils.doPost(requestFilter, requestPrefix + MASSAGE_URL + "/" + massageType.code, null, 3000);
 						}
 
 						protected void onPostExecute(String result) {
@@ -527,7 +527,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 					new AsyncTask<Void, Void, String>() {
 
 						protected String doInBackground(Void... params) {
-							return HttpRequestUtils.doDelete(precondition, requestPrefix + MASSAGE_URL, 3000);
+							return HttpRequestUtils.doDelete(requestFilter, requestPrefix + MASSAGE_URL, 3000);
 						}
 
 						protected void onPostExecute(String result) {
@@ -558,7 +558,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 					new AsyncTask<Void, Void, String>() {
 
 						protected String doInBackground(Void... params) {
-							return HttpRequestUtils.doPut(precondition, requestPrefix + MASSAGE_URL + PAUSE_URL, null, 3000);
+							return HttpRequestUtils.doPut(requestFilter, requestPrefix + MASSAGE_URL + PAUSE_URL, null, 3000);
 						}
 
 						protected void onPostExecute(String result) {
@@ -575,7 +575,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 					new AsyncTask<Void, Void, String>() {
 
 						protected String doInBackground(Void... params) {
-							return HttpRequestUtils.doPut(precondition, requestPrefix + MASSAGE_URL + RESUME_URL, null, 3000);
+							return HttpRequestUtils.doPut(requestFilter, requestPrefix + MASSAGE_URL + RESUME_URL, null, 3000);
 						}
 
 						protected void onPostExecute(String result) {
@@ -690,7 +690,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doGet(precondition, requestPrefix + FINGER_TEMP_SETTING_URL, 1000);
+				return HttpRequestUtils.doGet(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL, 1000);
 			}
 
 			protected void onPostExecute(String result) {

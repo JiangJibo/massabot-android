@@ -2,7 +2,7 @@
  * Copyright(C) 2017 MassBot Co. Ltd. All rights reserved.
  *
  */
-package com.bob.massabot.util;
+package com.bob.massabot.util.http;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,8 +18,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import com.bob.massabot.constant.HttpRequestPrecondition;
 
 import android.util.Log;
 
@@ -37,6 +35,8 @@ public class HttpRequestUtils {
 	public static final String POST_REQUEST = "POST";
 	public static final String PUT_REQUEST = "PUT";
 	public static final String DELETE_REQUEST = "DELETE";
+
+	public static final String TIMEOUT_RESULT = "操作超时,请重新尝试";
 
 	public static final String URL_PROTOCAL = "http://";
 
@@ -92,7 +92,7 @@ public class HttpRequestUtils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String doGet(HttpRequestPrecondition precondition, String url, int timeout) {
+	public static String doGet(HttpRequestFilter precondition, String url, int timeout) {
 		return doRequest(precondition, url, GET_REQUEST, null, timeout);
 	}
 
@@ -122,7 +122,7 @@ public class HttpRequestUtils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String doDelete(HttpRequestPrecondition precondition, String url, int timeout) {
+	public static String doDelete(HttpRequestFilter precondition, String url, int timeout) {
 		return doRequest(precondition, url, DELETE_REQUEST, null, timeout);
 	}
 
@@ -156,7 +156,7 @@ public class HttpRequestUtils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String doPost(HttpRequestPrecondition precondition, String url, String requestBody, int timeout) {
+	public static String doPost(HttpRequestFilter precondition, String url, String requestBody, int timeout) {
 		return doRequest(precondition, url, POST_REQUEST, requestBody, timeout);
 	}
 
@@ -190,7 +190,7 @@ public class HttpRequestUtils {
 	 * @return
 	 * @throws Exception
 	 */
-	public static String doPut(HttpRequestPrecondition precondition, String url, String requestBody, int timeout) {
+	public static String doPut(HttpRequestFilter precondition, String url, String requestBody, int timeout) {
 		return doRequest(precondition, url, PUT_REQUEST, requestBody, timeout);
 	}
 
@@ -208,10 +208,10 @@ public class HttpRequestUtils {
 	 * @return
 	 * @throws IOException
 	 */
-	private static String doRequest(HttpRequestPrecondition precondition, String url, String method, String requestBody, int timeout) {
+	private static String doRequest(HttpRequestFilter precondition, String url, String method, String requestBody, int timeout) {
 
-		if (precondition != null && !precondition.checkBeforeRequest()) {
-			return precondition.getNotpassNotice();
+		if (precondition != null && !precondition.doFilter()) {
+			return precondition.doAfterRejection();
 		}
 
 		String line;
@@ -231,16 +231,13 @@ public class HttpRequestUtils {
 				os.close();
 			}
 			is = conn.getInputStream();
-			if (conn.getResponseCode() != 200) {
-				logE("以" + method + "方式请求:" + url + " 时返回状态码为:" + conn.getResponseCode());
-				return null;
-			}
 			reader = new BufferedReader(new InputStreamReader(is));
 			while ((line = reader.readLine()) != null) {
 				sb.append(line);
 			}
 		} catch (IOException e) {
 			logE("以" + method + "方式请求:" + url + " 时出现异常");
+			return TIMEOUT_RESULT;
 		} finally {
 			try {
 				if (is != null) {
@@ -253,9 +250,8 @@ public class HttpRequestUtils {
 					conn.disconnect();
 				}
 			} catch (IOException e) {
-
+				return TIMEOUT_RESULT;
 			}
-
 		}
 		return sb.toString();
 	}

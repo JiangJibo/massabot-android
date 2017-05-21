@@ -4,13 +4,13 @@
  */
 package com.bob.massabot;
 
-import static com.bob.massabot.constant.HttpRequestURLConfig.CONNECT_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.INDEX_CON_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.WEB_ROOT;
 import static com.bob.massabot.constant.MassabotConstant.SUCCESS_FLAG;
 import static com.bob.massabot.constant.MassabotConstant.WIFI_PWD;
 import static com.bob.massabot.constant.MassabotConstant.WIFI_SSID;
 import static com.bob.massabot.constant.MassabotConstant.WIFI_SSL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.CONNECT_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.INDEX_CON_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.WEB_ROOT;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import com.bob.massabot.model.BaseActivity;
-import com.bob.massabot.util.HttpRequestUtils;
+import com.bob.massabot.util.http.HttpRequestUtils;
 import com.bob.massabot.widget.dialog.DialogUtils;
 import com.bob.massabot.wifi.WifiConnectUtils;
 import com.bob.massabot.wifi.WifiReceiver;
