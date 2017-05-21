@@ -1,20 +1,20 @@
 package com.bob.massabot;
 
-import static com.bob.massabot.constant.HttpRequestURLConfig.DEMOCASE_CON_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.DEMO_FILE_READ_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.DEMO_FILE_WRITE_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.PAUSE_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.PROGRESS_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.RESETTING_DEVICE;
-import static com.bob.massabot.constant.HttpRequestURLConfig.RESUME_URL;
-import static com.bob.massabot.constant.HttpRequestURLConfig.WEB_ROOT;
 import static com.bob.massabot.constant.MassabotConstant.SUCCESS_FLAG;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMOCASE_CON_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMO_FILE_READ_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMO_FILE_WRITE_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.PAUSE_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.PROGRESS_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.RESETTING_DEVICE;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.RESUME_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.WEB_ROOT;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.bob.massabot.model.BaseActivity;
-import com.bob.massabot.util.HttpRequestUtils;
+import com.bob.massabot.util.http.HttpRequestUtils;
 import com.bob.massabot.widget.DropDownListView;
 import com.bob.massabot.widget.RoundProgressBar;
 import com.google.gson.Gson;
@@ -179,7 +179,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 			@Override
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -227,7 +227,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -251,7 +251,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPost(precondition, requestPrefix + DEMO_FILE_WRITE_URL, null, 3000);
+				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -276,7 +276,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPost(precondition, requestPrefix + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null, 3000);
+				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -299,7 +299,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -321,7 +321,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(precondition, requestPrefix + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -344,7 +344,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doDelete(precondition, requestPrefix + DEMO_FILE_READ_URL, 3000);
+				return HttpRequestUtils.doDelete(requestFilter, requestPrefix + DEMO_FILE_READ_URL, 3000);
 			}
 
 			protected void onPostExecute(String result) {

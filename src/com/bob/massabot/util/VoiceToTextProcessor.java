@@ -4,7 +4,7 @@
  */
 package com.bob.massabot.util;
 
-import static com.bob.massabot.constant.HttpRequestURLConfig.USER_VOICE_WORDS_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.USER_VOICE_WORDS_URL;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -21,6 +21,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.bob.massabot.constant.MassabotConstant;
+import com.bob.massabot.util.http.HttpRequestUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.iflytek.cloud.RecognizerResult;

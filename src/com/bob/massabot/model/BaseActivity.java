@@ -6,9 +6,9 @@ package com.bob.massabot.model;
 
 import static com.bob.massabot.constant.MassabotConstant.WIFI_SSID;
 
-import com.bob.massabot.constant.HttpRequestPrecondition;
 import com.bob.massabot.constant.MassabotConstant;
 import com.bob.massabot.util.ActivityCollector;
+import com.bob.massabot.util.http.HttpRequestFilter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -23,7 +23,7 @@ import android.os.Bundle;
  */
 public class BaseActivity extends Activity {
 
-	protected HttpRequestPrecondition precondition; // 发送Http请求之前的校验工作
+	protected HttpRequestFilter requestFilter; // 发送Http请求之前的校验工作
 
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -33,15 +33,15 @@ public class BaseActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		ActivityCollector.addActivity(this, getClass());
 
-		precondition = new HttpRequestPrecondition() {
+		requestFilter = new HttpRequestFilter() {
 
 			@Override
-			public boolean checkBeforeRequest() { // 校验当前的连接的是否是指定的wifi
+			public boolean doFilter() { // 校验当前的连接的是否是指定的wifi
 				return ("\"" + WIFI_SSID + "\"").equals(getCurrentWifiSSID());
 			}
 
 			@Override
-			public String getNotpassNotice() {
+			public String doAfterRejection() {
 				return "当前所连接的wifi节点不是[" + MassabotConstant.WIFI_SSID + "],请重新连接";
 			}
 		};
