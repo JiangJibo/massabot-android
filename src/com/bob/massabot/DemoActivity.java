@@ -37,7 +37,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * 示教Activity
+ * 示教Activity.
  * 
  * @since 2017年3月22日 上午10:51:02
  * @version $Id$
