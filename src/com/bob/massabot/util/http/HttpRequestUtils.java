@@ -253,7 +253,7 @@ public class HttpRequestUtils {
 				return TIMEOUT_RESULT;
 			}
 		}
-		return sb.toString();
+		return sb.length() == 0 ? null : sb.toString();
 	}
 
 	/**

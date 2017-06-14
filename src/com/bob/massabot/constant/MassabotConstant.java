@@ -30,20 +30,23 @@ public interface MassabotConstant {
 	/**
 	 * wifi名称
 	 */
-	// public static final String WIFI_SSID = "massabot";
+	// public static final String WIFI_SSID = "TP-LINK_302";
 	public static final String WIFI_SSID = "Xbotpark_Guest";
+	// public static final String WIFI_SSID = "massabot";
 
 	/**
 	 * wifi密码
 	 */
-	// public static final String WIFI_PWD = "12345678";
+	// public static final String WIFI_PWD = "302302302";
+	// public static final String WIFI_PWD = "massabot";
 	public static final String WIFI_PWD = "sslrobot123";
 
 	/**
 	 * 电机所在局域网的IP地址
 	 */
-	// public static final String HOST_ADRESS_IP = "192.168.1.113";
-	public static final String HOST_ADRESS_IP = "192.168.200.76";
+	// public static final String HOST_ADRESS_IP = "192.168.35.29";
+	public static final String HOST_ADRESS_IP = "192.168.200.81";
+	// public static final String HOST_ADRESS_IP = "192.168.1.105";
 
 	/**
 	 * wifi加密方式,WPA/WPA2 PSK加密类型

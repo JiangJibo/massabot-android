@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.bob.massabot.constant.MassabotConstant;
 import com.bob.massabot.model.BaseActivity;
 import com.bob.massabot.util.http.HttpRequestUtils;
 import com.bob.massabot.widget.dialog.DialogUtils;
@@ -79,7 +80,8 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_index);
 
-		findViewById(R.id.qr_img).setOnClickListener(this);
+		findViewById(R.id.COM5).setOnClickListener(this);
+		findViewById(R.id.COM9).setOnClickListener(this);
 		progressDialog = DialogUtils.createProgressDialog(this, null, null);
 
 		androidId = android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.ANDROID_ID);
@@ -202,19 +204,24 @@ public class IndexActivity extends BaseActivity implements OnClickListener {
 	 */
 	@Override
 	public void onClick(View v) {
+		host_adress = MassabotConstant.HOST_ADRESS_IP;
 		switch (v.getId()) {
-		case R.id.qr_img:
-			if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-				ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.CAMERA }, 1);
-				return;
-			}
-			// 跳转到拍照界面扫描二维码
-			startActivityForResult(new Intent(IndexActivity.this, CaptureActivity.class), QR_SCAN_CODE);
+		case R.id.COM5:
+			serialPort = "COM5";
+			break;
+		case R.id.COM9:
+			serialPort = "COM9";
 			break;
 		default:
 			break;
 		}
-
+		showProgressDialog();
+		String ssid = new WifiConnectUtils(this).getSSID();
+		if (WIFI_SSID.equals(ssid)) {
+			connectDevices(host_adress, serialPort);
+		} else {
+			connectTargetWifi(WIFI_SSID, WIFI_PWD, WIFI_SSL);
+		}
 	}
 
 	/**

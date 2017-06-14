@@ -107,8 +107,8 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 
 		initFingerTemp();
 
-		voicer = new VoiceToTextProcessor(this, requestPrefix);
-		voicer.uploadUserWords();
+		// voicer = new VoiceToTextProcessor(this, requestPrefix);
+		// voicer.uploadUserWords();
 
 		remindWifiDialog(WIFI_SSID);
 
@@ -690,7 +690,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doGet(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL, 1000);
+				return HttpRequestUtils.doGet(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -700,7 +700,8 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 					indoorTemp = temp;
 					setTextViewClickable(tempReduce, false);
 				} catch (NumberFormatException e) {
-					toast("初始化手指温度失败");
+					toast("温度为:" + result);
+					// toast("初始化手指温度失败");
 				}
 			}
 

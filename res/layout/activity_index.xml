@@ -4,14 +4,25 @@
     android:layout_height="match_parent" >
     
     <ImageView
-        android:id="@+id/qr_img"
+        android:id="@+id/COM5"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/qr_img"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="20dp"
+        android:contentDescription="COM5"
+         />
+    
+    <ImageView
+        android:id="@+id/COM9"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:src="@drawable/qr_img"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
-        android:contentDescription="二维码扫描图标"
+        android:contentDescription="COM9"
          />
      
 
