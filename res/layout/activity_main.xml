@@ -45,52 +45,6 @@
        android:layout_marginStart="150dp"
        />
      
-     <TextView 
-       android:id="@+id/finger_temp"
-       android:layout_alignBottom="@id/demo_to_index"
-       android:layout_marginStart="225dp"
-       android:layout_width="wrap_content"
-       android:layout_height="30dp"
-       android:textSize="15sp"
-       android:textColor="#FEFEFE"
-       android:padding="3dp"
-       android:text="@string/finger_tem_text"
-       />
-     
-     <TextView 
-       android:id="@+id/finger_temp_reduce"
-       android:layout_toEndOf="@id/finger_temp"
-       android:layout_marginStart="15dp"
-       android:layout_alignBaseline="@id/finger_temp"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:textSize="20sp"
-       android:text="－"
-	   android:textColor="#FFFFFF"
-       />
-     
-      <TextView 
-       android:id="@+id/finger_temp_num"
-       android:layout_toEndOf="@id/finger_temp_reduce"
-       android:layout_marginStart="15dp"
-       android:layout_alignBaseline="@id/finger_temp_reduce"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:textSize="15sp"
-       android:textColor="#FEFEFE"
-       />
-     
-     <TextView 
-       android:id="@+id/finger_temp_add"
-       android:layout_toEndOf="@id/finger_temp_num"
-       android:layout_marginStart="15dp"
-       android:layout_alignBaseline="@id/finger_temp"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:textSize="20sp"
-       android:textColor="#FFFFFF"
-       android:text="+"
-       />
      
      <Button
         android:id="@+id/start"

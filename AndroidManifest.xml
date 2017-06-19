@@ -41,7 +41,7 @@
         android:theme="@style/AppTheme"
         android:name="com.bob.massabot.util.GlobalApplicationUtils" >
         <activity
-            android:name=".IndexActivity"
+            android:name=".DemoActivity"
             android:label="@string/app_name" >
              <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -54,7 +54,7 @@
             android:screenOrientation="landscape" >
         </activity>
         <activity
-            android:name=".DemoActivity"
+            android:name=".IndexActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape"  >
         </activity>

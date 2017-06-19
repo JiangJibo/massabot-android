@@ -17,6 +17,76 @@
        android:padding="3dp"
        android:text="@string/back_text"
        />
+   
+   <TextView 
+       android:id="@+id/finger_temp"
+       android:layout_alignBottom="@id/demo_back_to_main"
+       android:layout_marginStart="200dp"
+       android:layout_width="wrap_content"
+       android:layout_height="30dp"
+       android:textSize="15sp"
+       android:textColor="#FEFEFE"
+       android:padding="3dp"
+       android:text="@string/finger_tem_text"
+       />
+     
+     <TextView 
+       android:id="@+id/finger_temp_reduce"
+       android:layout_toEndOf="@id/finger_temp"
+       android:layout_marginStart="15dp"
+       android:layout_alignBaseline="@id/finger_temp"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:textSize="20sp"
+       android:text="－"
+	   android:textColor="#FFFFFF"
+       />
+     
+      <TextView 
+       android:id="@+id/finger_temp_num"
+       android:layout_toEndOf="@id/finger_temp_reduce"
+       android:layout_marginStart="15dp"
+       android:layout_alignBaseline="@id/finger_temp_reduce"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:textSize="15sp"
+       android:textColor="#FEFEFE"
+       />
+     
+     <TextView 
+       android:id="@+id/finger_temp_add"
+       android:layout_toEndOf="@id/finger_temp_num"
+       android:layout_marginStart="15dp"
+       android:layout_alignBaseline="@id/finger_temp"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:textSize="20sp"
+       android:textColor="#FFFFFF"
+       android:text="+"
+       />
+     
+     <Button
+         android:id="@+id/com5"
+         android:layout_width="80dp"
+         android:layout_height="30dp"
+         android:layout_alignBottom="@id/demo_back_to_main"
+         android:layout_alignParentEnd="true"
+         android:layout_marginEnd="50dp"
+         android:background="@drawable/massage_button"
+         android:text="com5"
+         />
+     
+     <Button
+         android:id="@+id/com9"
+         android:layout_width="80dp"
+         android:layout_height="30dp"
+         android:layout_alignParentEnd="true"
+         android:layout_marginEnd="50dp"
+         android:layout_marginTop="60dp"
+         android:background="@drawable/massage_button"
+         android:text="com9"
+         />
+     
 
     <Button
         android:id="@+id/demo_start"
@@ -48,7 +118,7 @@
          android:id="@+id/demo_dropdown"
          android:layout_width="120dp"
          android:layout_height="30dp"
-         android:layout_marginTop="50dp"
+         android:layout_marginTop="70dp"
          android:layout_centerHorizontal="true"
          android:gravity="center" >
      </com.bob.massabot.widget.DropDownListView>
