@@ -45,7 +45,7 @@ public interface MassabotConstant {
 	 * 电机所在局域网的IP地址
 	 */
 	// public static final String HOST_ADRESS_IP = "192.168.35.29";
-	public static final String HOST_ADRESS_IP = "192.168.200.81";
+	public static final String HOST_ADRESS_IP = "192.168.200.46";
 	// public static final String HOST_ADRESS_IP = "192.168.1.105";
 
 	/**

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import com.bob.massabot.constant.MassabotConstant;
 import com.bob.massabot.model.BaseActivity;
@@ -60,7 +62,7 @@ import android.widget.Toast;
  * @author JiangJibo
  *
  */
-public class DemoActivity extends BaseActivity implements OnClickListener {
+public class DemoActivity extends BaseActivity implements OnClickListener, OnLongClickListener {
 
 	public static final String DEMO_FILE_EMPTY_FLAG = "(0)"; // 示教文件为空的标识
 	public static final Integer DEMO_MODE_FLAG = 0; // 演示模式
@@ -68,7 +70,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	public static final Integer REAPPER_MODE_FLAG = 1; // 复现模式
 
 	private String curDemoCaseName; // 当前选中的示教案列名称
-	private String curSerialPort; // 当前的串口名称
+	private volatile String curSerialPort; // 当前的串口名称
 
 	private ProgressDialog progressDialog; // 切换wifi连接电机时的等待
 
@@ -161,8 +163,6 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 		};
 
-		initFingerTemp();
-		addLongClickListenerToModBtn();
 		initDemoDropdown();
 
 	}
@@ -183,8 +183,12 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		pauseBtn.setOnClickListener(DemoActivity.this);
 		modeBtn = (Button) findViewById(R.id.demo_mode);
 		modeBtn.setOnClickListener(DemoActivity.this);
+		setButtonClickable(modeBtn, false);
 		reapperBtn = (Button) findViewById(R.id.reappear_mode);
 		reapperBtn.setOnClickListener(DemoActivity.this);
+		reapperBtn.setOnLongClickListener(DemoActivity.this);
+		setButtonClickable(reapperBtn, false);
+		setButtonLongClickable(reapperBtn, false);
 
 		startText = getString(R.string.start_text);
 		finishText = getString(R.string.finish_text);
@@ -210,20 +214,29 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	/**
 	 * 断开指定串口
 	 * 
-	 * @param serialPort
 	 */
-	private boolean disConnect(String serialPort) {
-		if (!requestFilter.doFilter()) {
-			toast(requestFilter.doAfterRejection());
-			return false;
+	private boolean disConnect() {
+
+		Callable<String> callable = new Callable<String>() {
+
+			@Override
+			public String call() throws Exception {
+				return HttpRequestUtils.doDelete(requestFilter, requestPrefix + INDEX_CON_URL + CONNECT_URL, 5000);
+			}
+		};
+
+		Future<String> future = HttpRequestUtils.EXECUTOR.submit(callable);
+		String result = null;
+		try {
+			result = future.get();
+			if (SUCCESS_FLAG.equals(result)) {
+				return true;
+			}
+		} catch (Exception e) {
+
 		}
-		String result = HttpRequestUtils.doDelete(requestFilter, requestPrefix + CONNECT_URL, 5000);
-		if (SUCCESS_FLAG.equals(result)) {
-			return true;
-		} else {
-			toast(result);
-			return false;
-		}
+		toast(result);
+		return false;
 	}
 
 	/**
@@ -232,7 +245,6 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * @param serialPort
 	 */
 	private void connect(String serialPort) {
-		this.curSerialPort = serialPort;
 		showProgressDialog();
 		String ssid = new WifiConnectUtils(this).getSSID();
 		if (WIFI_SSID.equals(ssid)) {
@@ -240,6 +252,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		} else {
 			connectTargetWifi(WIFI_SSID, WIFI_PWD, WIFI_SSL);
 		}
+		connectDevices(MassabotConstant.HOST_ADRESS_IP, serialPort);
 	}
 
 	/**
@@ -282,43 +295,24 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 			@Override
 			protected void onPostExecute(String result) {
 				progressDialog.dismiss();
-				if (SUCCESS_FLAG.equals(result)) {
-
+				if (result != null && SUCCESS_FLAG.equals(result) || result.startsWith("{")) {
+					curSerialPort = serialPort;
+					if (isDemoMode()) {
+						setButtonClickable(com5, false);
+						setButtonClickable(reapperBtn, true);
+						setButtonLongClickable(reapperBtn, true);
+					} else {
+						setButtonClickable(com9, false);
+						setButtonClickable(modeBtn, true);
+						initFingerTemp();
+					}
 				} else {
-
+					toast("连接" + serialPort + "串口失败,結果为:[" + result + "]");
 				}
 			}
 
 		}.execute();
 
-	}
-
-	/**
-	 * 给演示/复现按钮添加单击事件
-	 */
-	private void addLongClickListenerToModBtn() {
-		// 给复现按钮添加长按事件,长按后发送复位请求
-		reapperBtn.setOnLongClickListener(new OnLongClickListener() {
-
-			@Override
-			public boolean onLongClick(View v) {
-				new AsyncTask<Void, Void, String>() {
-
-					@Override
-					protected String doInBackground(Void... params) {
-						return HttpRequestUtils.doPut(requestPrefix + DEMOCASE_CON_URL + RESETTING_DEVICE, null, 1000);
-					}
-
-					protected void onPostExecute(String result) {
-						if (result == null) {
-							toast(reapperBtn.getText().toString() + "操作失败");
-						}
-					}
-
-				}.execute();
-				return true;
-			}
-		});
 	}
 
 	/**
@@ -330,7 +324,8 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 			@Override
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_WRITE_URL + "?demoName=" + curDemoCaseName, null,
+						3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -354,7 +349,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 			@Override
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(requestPrefix + DEMO_FILE_WRITE_URL + PAUSE_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_WRITE_URL + PAUSE_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -378,7 +373,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_WRITE_URL + RESUME_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -402,7 +397,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMO_FILE_WRITE_URL, null, 3000);
+				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_WRITE_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -427,7 +422,8 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null, 3000);
+				return HttpRequestUtils.doPost(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_READ_URL + "?demoName=" + curDemoCaseName, null,
+						3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -450,7 +446,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_READ_URL + PAUSE_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -472,7 +468,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_READ_URL + RESUME_URL, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -495,7 +491,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doDelete(requestFilter, requestPrefix + DEMO_FILE_READ_URL, 3000);
+				return HttpRequestUtils.doDelete(requestFilter, requestPrefix + DEMOCASE_CON_URL + DEMO_FILE_READ_URL, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -523,7 +519,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 					if (!progressing) {
 						return;
 					}
-					String result = HttpRequestUtils.doGet(requestPrefix + PROGRESS_URL, 2000);
+					String result = HttpRequestUtils.doGet(requestPrefix + DEMOCASE_CON_URL + PROGRESS_URL, 2000);
 
 					if (result == null) {
 						Message msg = new Message();
@@ -587,7 +583,6 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 				if (result != null) {
 					ArrayList<String> data = new Gson().fromJson(result, new TypeToken<ArrayList<String>>() {
 					}.getType());
-					setModBtnClickable(true);
 					curDemoCaseName = data.get(0);
 					demoDropdown.setItemsData(data, 0);
 				} else {
@@ -608,7 +603,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doPost(requestPrefix + "?demoName=" + demoName, null, 3000);
+				return HttpRequestUtils.doPost(requestPrefix + DEMOCASE_CON_URL + "?demoName=" + demoName, null, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -631,7 +626,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doDelete(requestPrefix + "?demoName=" + demoName, 3000);
+				return HttpRequestUtils.doDelete(requestPrefix + DEMOCASE_CON_URL + "?demoName=" + demoName, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -694,7 +689,10 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	private void doResetAfterProgressed() {
 		progressing = false;
 		progress = 0;
-		lockWidgetAfterFinished();
+		setButtonClickable(reapperBtn, true);
+		demoDropdown.setClickable(true);
+		demoDropdown.setLongClickable(true);
+		startBtn.setText(startText);
 	}
 
 	/**
@@ -713,7 +711,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		int index = itemsData.indexOf(curDemoCaseName);
 		int length = curDemoCaseName.length();
 		curDemoCaseName = new StringBuffer(curDemoCaseName).replace(length - 2, length - 1, "1").toString();
-		itemsData.add(index, curDemoCaseName);
+		itemsData.set(index, curDemoCaseName);
 		demoDropdown.setItemsData(itemsData, index);
 		toast("案列:[" + curDemoCaseName + "]演示成功");
 	}
@@ -757,6 +755,16 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	}
 
 	/**
+	 * 設置是否可以長按
+	 * 
+	 * @param button
+	 * @param clickable
+	 */
+	private void setButtonLongClickable(Button button, boolean clickable) {
+		button.setLongClickable(clickable);
+	}
+
+	/**
 	 * 提高/降低指温
 	 * 
 	 * @param operation
@@ -768,7 +776,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Integer, Void, String>() {
 
 			protected String doInBackground(Integer... params) {
-				return HttpRequestUtils.doPut(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + MAIN_CON_URL + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
 			}
 
 			@Override
@@ -849,6 +857,15 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 		}.start();
 
+	}
+
+	/**
+	 * 当前是否是示教模式
+	 * 
+	 * @return
+	 */
+	private boolean isDemoMode() {
+		return curSerialPort != null && com5.getText().toString().equals(curSerialPort);
 	}
 
 	/**
@@ -943,14 +960,54 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 			processFingerTemp(true);
 			break;
 		case R.id.com5:
-			connect(text);
-			break;
 		case R.id.com9:
-			connect(text);
+			if (curSerialPort != null && !text.equals(curSerialPort)) {
+				boolean result = disConnect();
+				if (result) {
+					if (isDemoMode()) {
+						setButtonClickable(com5, true);
+						setButtonClickable(reapperBtn, false);
+						setButtonLongClickable(reapperBtn, false);
+					} else {
+						setButtonClickable(com9, true);
+						setButtonClickable(modeBtn, false);
+					}
+					connect(text);
+				}
+			} else {
+				connect(text);
+			}
 			break;
 		default:
 			break;
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see android.view.View.OnLongClickListener#onLongClick(android.view.View)
+	 */
+	@Override
+	public boolean onLongClick(View v) {
+		switch (v.getId()) {
+		case R.id.reappear_mode:
+			new AsyncTask<Void, Void, String>() {
+
+				@Override
+				protected String doInBackground(Void... params) {
+					return HttpRequestUtils.doPut(requestPrefix + DEMOCASE_CON_URL + RESETTING_DEVICE, null, 1000);
+				}
+
+				protected void onPostExecute(String result) {
+					if (result == null) {
+						toast(reapperBtn.getText().toString() + "操作失败");
+					}
+				}
+
+			}.execute();
+			return true;
+		}
+		return false;
+
 	}
 
 }
