@@ -1,9 +1,18 @@
 package com.bob.massabot;
 
+import static com.bob.massabot.constant.MassabotConstant.FINGER_TEMP_MAX;
+import static com.bob.massabot.constant.MassabotConstant.FINGER_TEMP_MIN;
 import static com.bob.massabot.constant.MassabotConstant.SUCCESS_FLAG;
+import static com.bob.massabot.constant.MassabotConstant.WIFI_PWD;
+import static com.bob.massabot.constant.MassabotConstant.WIFI_SSID;
+import static com.bob.massabot.constant.MassabotConstant.WIFI_SSL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.CONNECT_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMOCASE_CON_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMO_FILE_READ_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.DEMO_FILE_WRITE_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.FINGER_TEMP_SETTING_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.INDEX_CON_URL;
+import static com.bob.massabot.util.http.HttpRequestURLConfig.MAIN_CON_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.PAUSE_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.PROGRESS_URL;
 import static com.bob.massabot.util.http.HttpRequestURLConfig.RESETTING_DEVICE;
@@ -12,16 +21,23 @@ import static com.bob.massabot.util.http.HttpRequestURLConfig.WEB_ROOT;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
+import com.bob.massabot.constant.MassabotConstant;
 import com.bob.massabot.model.BaseActivity;
 import com.bob.massabot.util.http.HttpRequestUtils;
 import com.bob.massabot.widget.DropDownListView;
 import com.bob.massabot.widget.RoundProgressBar;
+import com.bob.massabot.widget.dialog.DialogUtils;
+import com.bob.massabot.wifi.WifiConnectUtils;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import android.content.Intent;
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.graphics.Color;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -52,6 +68,9 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	public static final Integer REAPPER_MODE_FLAG = 1; // 复现模式
 
 	private String curDemoCaseName; // 当前选中的示教案列名称
+	private String curSerialPort; // 当前的串口名称
+
+	private ProgressDialog progressDialog; // 切换wifi连接电机时的等待
 
 	private DropDownListView demoDropdown; // 示教下拉框
 
@@ -67,13 +86,16 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	private RoundProgressBar roundProgressBar; // 进度环
 	private Chronometer timer; // 计时器
 
-	private Button startBtn, pauseBtn, modeBtn, reapperBtn;
+	private Button com5, com9, startBtn, pauseBtn, modeBtn, reapperBtn;
 	private String startText, finishText, pauseText, resumeText;
+
+	private TextView tempReduce, tempAdd, tempText;
 
 	private String hostAdress, requestPrefix;
 
 	private Handler handler;
 
+	@SuppressLint("HandlerLeak")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -84,15 +106,21 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		roundProgressBar = (RoundProgressBar) findViewById(R.id.demoRoundProgressBar);
 		timer = (Chronometer) this.findViewById(R.id.chronometer);
 
+		progressDialog = DialogUtils.createProgressDialog(this, null, null);
+
 		findViewById(R.id.demo_back_to_main).setOnClickListener(DemoActivity.this);
 
 		initButton();
 
-		Intent intent = getIntent();
-		this.hostAdress = intent.getStringExtra("hostAdress");
-		this.requestPrefix = HttpRequestUtils.createRequestUrl(hostAdress, WEB_ROOT, DEMOCASE_CON_URL);
+		initTextView();
+
+		this.hostAdress = MassabotConstant.HOST_ADRESS_IP;
+		this.requestPrefix = HttpRequestUtils.createRequestUrl(hostAdress, WEB_ROOT, "");
 
 		handler = new Handler() {
+
+			boolean wifiConnected; // wifi状态,是否切换到指定的wifi
+			boolean wifiChecked = false; // 在ProgressDialog内延迟一秒连接设备
 
 			public void handleMessage(Message msg) {
 				super.handleMessage(msg);
@@ -110,6 +138,21 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 				case 2:
 					break;
 				case 3:
+					if (!progressDialog.isShowing()) { // 弹出框已经关闭
+						return;
+					}
+					int secs = (Integer) msg.obj;
+					if (secs > 0) {
+						progressDialog.setMessage("连接推拿设备中,请稍等(" + secs + "秒)");
+					} else {
+						progressDialog.dismiss();
+						toast("连接推拿设备超时,请重新连接");
+					}
+					if (wifiConnected && wifiChecked) { // 在wifi切换成功后,可能网络初始化未完成,需要等待一点时间后再连接电机
+						wifiConnected = false; // 只发送一次连接请求
+						connectDevices(MassabotConstant.HOST_ADRESS_IP, curSerialPort);
+					}
+					wifiChecked = wifiConnected; // 在wifi切换成功的下一秒连接电机
 					break;
 				default:
 					break;
@@ -118,6 +161,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 		};
 
+		initFingerTemp();
 		addLongClickListenerToModBtn();
 		initDemoDropdown();
 
@@ -127,6 +171,12 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	 * 初始化4个Button
 	 */
 	private void initButton() {
+		com5 = (Button) findViewById(R.id.com5);
+		com5.setOnClickListener(DemoActivity.this);
+
+		com9 = (Button) findViewById(R.id.com9);
+		com9.setOnClickListener(DemoActivity.this);
+
 		startBtn = (Button) findViewById(R.id.demo_start);
 		startBtn.setOnClickListener(DemoActivity.this);
 		pauseBtn = (Button) findViewById(R.id.demo_pause);
@@ -143,6 +193,107 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 	}
 
 	/**
+	 * 初始化TextView,主要是手指温度及后退等
+	 */
+	private void initTextView() {
+
+		tempReduce = (TextView) findViewById(R.id.finger_temp_reduce);
+		tempReduce.setOnClickListener(DemoActivity.this);
+
+		tempAdd = (TextView) findViewById(R.id.finger_temp_add);
+		tempAdd.setOnClickListener(DemoActivity.this);
+
+		tempText = (TextView) findViewById(R.id.finger_temp_num);
+
+	}
+
+	/**
+	 * 断开指定串口
+	 * 
+	 * @param serialPort
+	 */
+	private boolean disConnect(String serialPort) {
+		if (!requestFilter.doFilter()) {
+			toast(requestFilter.doAfterRejection());
+			return false;
+		}
+		String result = HttpRequestUtils.doDelete(requestFilter, requestPrefix + CONNECT_URL, 5000);
+		if (SUCCESS_FLAG.equals(result)) {
+			return true;
+		} else {
+			toast(result);
+			return false;
+		}
+	}
+
+	/**
+	 * 连接指定的串口
+	 * 
+	 * @param serialPort
+	 */
+	private void connect(String serialPort) {
+		this.curSerialPort = serialPort;
+		showProgressDialog();
+		String ssid = new WifiConnectUtils(this).getSSID();
+		if (WIFI_SSID.equals(ssid)) {
+			connectDevices(MassabotConstant.HOST_ADRESS_IP, serialPort);
+		} else {
+			connectTargetWifi(WIFI_SSID, WIFI_PWD, WIFI_SSL);
+		}
+	}
+
+	/**
+	 * 在切换wifi连接电机过程中,一直显示此弹框,直到连接成功/失败
+	 */
+	private void showProgressDialog() {
+		progressDialog.show();
+		final Timer timer = new Timer();
+		timer.schedule(new TimerTask() {
+
+			int second = 10;
+
+			@Override
+			public void run() {
+				Message msg = new Message();
+				msg.what = 3;
+				msg.obj = second;
+				handler.sendMessage(msg);
+				second--;
+				if (!progressDialog.isShowing()) {
+					timer.cancel();
+				}
+			}
+		}, 0, 1000);
+	}
+
+	/**
+	 * 连接上指定wifi后开始连接电机
+	 * 
+	 * @param ssid
+	 */
+	private void connectDevices(String host_adress, final String serialPort) {
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doPost(requestPrefix + INDEX_CON_URL + CONNECT_URL + "/" + serialPort, null, 3000);
+			}
+
+			@Override
+			protected void onPostExecute(String result) {
+				progressDialog.dismiss();
+				if (SUCCESS_FLAG.equals(result)) {
+
+				} else {
+
+				}
+			}
+
+		}.execute();
+
+	}
+
+	/**
 	 * 给演示/复现按钮添加单击事件
 	 */
 	private void addLongClickListenerToModBtn() {
@@ -155,7 +306,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 
 					@Override
 					protected String doInBackground(Void... params) {
-						return HttpRequestUtils.doPut(requestPrefix + RESETTING_DEVICE, null, 1000);
+						return HttpRequestUtils.doPut(requestPrefix + DEMOCASE_CON_URL + RESETTING_DEVICE, null, 1000);
 					}
 
 					protected void onPostExecute(String result) {
@@ -429,7 +580,7 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		new AsyncTask<Void, Void, String>() {
 
 			protected String doInBackground(Void... params) {
-				return HttpRequestUtils.doGet(requestPrefix, 3000);
+				return HttpRequestUtils.doGet(requestPrefix + DEMOCASE_CON_URL, 3000);
 			}
 
 			protected void onPostExecute(String result) {
@@ -605,13 +756,122 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 		}
 	}
 
+	/**
+	 * 提高/降低指温
+	 * 
+	 * @param operation
+	 *            true:提高;false:降低
+	 */
+	private void processFingerTemp(final boolean operation) {
+		int temp0 = Integer.parseInt(tempText.getText().toString().substring(0, 2));
+		final int temp1 = operation ? temp0 + 1 : temp0 - 1;
+		new AsyncTask<Integer, Void, String>() {
+
+			protected String doInBackground(Integer... params) {
+				return HttpRequestUtils.doPut(requestFilter, requestPrefix + FINGER_TEMP_SETTING_URL + "/" + params[0], null, 1000);
+			}
+
+			@Override
+			protected void onPostExecute(String result) {
+				if (!SUCCESS_FLAG.equals(result)) {
+					toast(result);
+					return;
+				}
+				if (operation) {
+					setTextViewClickable(tempReduce, true);
+					tempText.setText(temp1 + "℃");
+					if (temp1 == FINGER_TEMP_MAX) {
+						setTextViewClickable(tempAdd, false);
+					}
+				} else {
+					setTextViewClickable(tempAdd, true);
+					tempText.setText(temp1 + "℃");
+					if (temp1 == FINGER_TEMP_MIN) {
+						setTextViewClickable(tempReduce, false);
+					}
+				}
+			}
+		}.execute(temp1);
+
+	}
+
+	/**
+	 * 初始化手指温度
+	 */
+	private void initFingerTemp() {
+
+		new AsyncTask<Void, Void, String>() {
+
+			protected String doInBackground(Void... params) {
+				return HttpRequestUtils.doGet(requestFilter, requestPrefix + MAIN_CON_URL + FINGER_TEMP_SETTING_URL, 3000);
+			}
+
+			protected void onPostExecute(String result) {
+				try {
+					Integer.parseInt(result);
+					tempText.setText(result);
+					setTextViewClickable(tempReduce, false);
+				} catch (NumberFormatException e) {
+					toast("温度为:" + result);
+					// toast("初始化手指温度失败");
+				}
+			}
+
+		}.execute();
+	}
+
+	/**
+	 * 连接到电机控制的wifi
+	 * 
+	 * @param ssid
+	 *            wifi名称
+	 * @param pwd
+	 *            wifi密码
+	 * @param ssl
+	 *            wifi加密类型
+	 */
+	private void connectTargetWifi(final String ssid, final String pwd, final int ssl) {
+
+		new Thread() {
+
+			public void run() {
+				WifiConnectUtils wifiUtils = new WifiConnectUtils(DemoActivity.this);
+				int state = wifiUtils.checkState();
+				if (state == WifiManager.WIFI_STATE_ENABLED || state == WifiManager.WIFI_STATE_ENABLING) {
+					if (ssid.equals(wifiUtils.getSSID())) {
+						return;
+					}
+					wifiUtils.disConnectWifi();
+				}
+				wifiUtils.openWifi();
+				wifiUtils.addNetwork(wifiUtils.CreateWifiInfo(ssid, pwd, ssl));
+			}
+
+		}.start();
+
+	}
+
+	/**
+	 * 设置TextView是否可选
+	 * 
+	 * @param tv
+	 * @param clickable
+	 */
+	private void setTextViewClickable(TextView tv, boolean clickable) {
+		tv.setClickable(clickable);
+		if (clickable) {
+			tv.setTextColor(Color.parseColor("#FFFFFF"));
+		} else {
+			tv.setTextColor(Color.parseColor("#000000"));
+		}
+	}
+
 	/* (non-Javadoc)
 	 * @see android.view.View.OnClickListener#onClick(android.view.View)
 	 */
 	@Override
 	public void onClick(View v) {
 		String text = ((TextView) v).getText().toString();
-
 		switch (v.getId()) {
 		case R.id.demo_back_to_main: // 后退
 			finishActivity();
@@ -673,6 +933,20 @@ public class DemoActivity extends BaseActivity implements OnClickListener {
 				}
 			}
 			setButtonClickable(pauseBtn, true);
+			break;
+
+		case R.id.finger_temp_reduce: // -指温
+			processFingerTemp(false);
+			break;
+
+		case R.id.finger_temp_add: // +指温
+			processFingerTemp(true);
+			break;
+		case R.id.com5:
+			connect(text);
+			break;
+		case R.id.com9:
+			connect(text);
 			break;
 		default:
 			break;
