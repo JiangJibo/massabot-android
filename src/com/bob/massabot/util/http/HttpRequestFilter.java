@@ -22,8 +22,8 @@ public interface HttpRequestFilter {
 	public boolean doFilter();
 
 	/**
-	 * 在Http请求被
+	 * 在Http请求被拒绝时获取拒绝原因信息
 	 */
-	public String doAfterRejection();
+	public String getRejectionReason();
 
 }

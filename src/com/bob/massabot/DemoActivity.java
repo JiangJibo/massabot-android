@@ -580,13 +580,14 @@ public class DemoActivity extends BaseActivity implements OnClickListener, OnLon
 			}
 
 			protected void onPostExecute(String result) {
-				if (result != null) {
+				if (result != null && !HttpRequestUtils.CONNECT_FAILED_RESULT.equals(result)) {
 					ArrayList<String> data = new Gson().fromJson(result, new TypeToken<ArrayList<String>>() {
 					}.getType());
 					curDemoCaseName = data.get(0);
 					demoDropdown.setItemsData(data, 0);
 				} else {
 					demoDropdown.setItemsData(new ArrayList<String>(), null);
+					toast(result);
 				}
 			}
 
