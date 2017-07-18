@@ -43,7 +43,7 @@ public interface MassabotConstant {
 	 * 电机所在局域网的IP地址
 	 */
 	// public static final String HOST_ADRESS_IP = "192.168.1.113";
-	public static final String HOST_ADRESS_IP = "192.168.200.76";
+	public static final String HOST_ADRESS_IP = "192.168.200.117";
 
 	/**
 	 * wifi加密方式,WPA/WPA2 PSK加密类型

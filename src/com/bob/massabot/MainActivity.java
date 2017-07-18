@@ -195,7 +195,7 @@ public class MainActivity extends BaseActivity implements OnClickListener {
 	 */
 	public void onBackPressed() {
 		if (!requestFilter.doFilter()) {
-			toast(requestFilter.doAfterRejection());
+			toast(requestFilter.getRejectionReason());
 			return;
 		}
 		long secTime = System.currentTimeMillis();

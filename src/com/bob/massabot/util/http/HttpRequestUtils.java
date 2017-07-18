@@ -36,7 +36,7 @@ public class HttpRequestUtils {
 	public static final String PUT_REQUEST = "PUT";
 	public static final String DELETE_REQUEST = "DELETE";
 
-	public static final String TIMEOUT_RESULT = "操作超时,请重新尝试";
+	public static final String CONNECT_FAILED_RESULT = "尝试请求服务器时失败,请重新尝试";
 
 	public static final String URL_PROTOCAL = "http://";
 
@@ -211,7 +211,7 @@ public class HttpRequestUtils {
 	private static String doRequest(HttpRequestFilter precondition, String url, String method, String requestBody, int timeout) {
 
 		if (precondition != null && !precondition.doFilter()) {
-			return precondition.doAfterRejection();
+			return precondition.getRejectionReason();
 		}
 
 		String line;
@@ -237,7 +237,7 @@ public class HttpRequestUtils {
 			}
 		} catch (IOException e) {
 			logE("以" + method + "方式请求:" + url + " 时出现异常");
-			return TIMEOUT_RESULT;
+			return CONNECT_FAILED_RESULT;
 		} finally {
 			try {
 				if (is != null) {
@@ -250,7 +250,7 @@ public class HttpRequestUtils {
 					conn.disconnect();
 				}
 			} catch (IOException e) {
-				return TIMEOUT_RESULT;
+				return CONNECT_FAILED_RESULT;
 			}
 		}
 		return sb.toString();

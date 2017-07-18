@@ -41,7 +41,7 @@ public class BaseActivity extends Activity {
 			}
 
 			@Override
-			public String doAfterRejection() {
+			public String getRejectionReason() {
 				return "当前所连接的wifi节点不是[" + MassabotConstant.WIFI_SSID + "],请重新连接";
 			}
 		};
