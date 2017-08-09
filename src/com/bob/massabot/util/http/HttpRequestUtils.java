@@ -38,9 +38,9 @@ public class HttpRequestUtils {
 
 	public static final String CONNECT_FAILED_RESULT = "尝试连接时出现异常，请重新连接";
 
-	public static final String URL_PROTOCAL = "http://";
+	public static final String HTTP_PROTOCAL = "http://";
 
-	public static final String URL_PORT = ":8080";
+	public static final String HTTP_PORT = ":8080";
 
 	public static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
@@ -53,7 +53,7 @@ public class HttpRequestUtils {
 	 * @return
 	 */
 	public static String createRequestUrl(String hostAdress, String webRoot, String controllerPath) {
-		return HttpRequestUtils.URL_PROTOCAL + hostAdress + HttpRequestUtils.URL_PORT + webRoot + controllerPath;
+		return HttpRequestUtils.HTTP_PROTOCAL + hostAdress + HttpRequestUtils.HTTP_PORT + webRoot + controllerPath;
 	}
 
 	/**
